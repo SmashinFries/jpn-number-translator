@@ -19,25 +19,51 @@ k_num = {'いち':'一', 'に':'ニ', 'さん':'三', 'よん':'四', 'ご':'五
 class Window(QMainWindow):
     def __init__(self):
         super(Window, self).__init__()
-        loadUi("ui/main_window.ui", self)
+        loadUi("D:/.Programming/Python/number_translator/ui/main_window.ui", self)
         self.setWindowTitle("Number Translator")
+        
+        self.userInput.setPlaceholderText("Enter a number with 1-7 digits...")
         self.btn_convert.clicked.connect(self.action)
         self.btn_random.clicked.connect(self.rand)
         
-    def action(self):
-        text = self.userInput.text()
-        h_results, k_results = converter(text)
+        self.mode_time.toggled.connect(self.mode)
+        self.mode_time.toggled.connect(self.mode)
+
+    def mode(self):     
+        if self.mode_time.isChecked() == True:
+            self.userInput.setText("")
+            self.userInput.setPlaceholderText("Enter a time: [hh:mm:ss]")
+            self.numDisplaylbl.setText("")
+            self.lbl_hir.setText("")
+            self.lbl_kj.setText("")
+        else:
+            self.userInput.setPlaceholderText("Enter a number with 1-7 digits...")
+            self.btn_convert.clicked.connect(self.action)
+            self.btn_random.clicked.connect(self.rand)
         
-        self.lbl_hir.setText(h_results)
-        self.lbl_kj.setText(k_results)
+    def action(self):
+        if self.mode_normal.isChecked() == True:
+            text = self.userInput.text()
+            if text != "":
+                h_results, k_results = converter(text)
+                self.lbl_hir.setText(h_results)
+                self.lbl_kj.setText(k_results)
+                
+            elif text == "":
+                h_results, k_results = converter(self.rand_num)
+                self.lbl_hir.setText(h_results)
+                self.lbl_kj.setText(k_results)
+            
+        if self.mode_time.isChecked() == True:
+            pass
+            
+            
     
     def rand(self):
-        rand_num = str(random.randint(0, 9999999))
-        text = self.userInput.setText(rand_num)
-        h_results, k_results = converter(text)
-        
-        self.lbl_hir.setText(h_results)
-        self.lbl_kj.setText(k_results)
+        self.userInput.setText("")
+        self.rand_num = str(random.randint(0, 9999999))
+        self.numDisplaylbl.setText(self.rand_num)
+        self.action()
 
 
 class Conversion:
@@ -59,7 +85,6 @@ class Conversion:
         if int(cut2) > 0:
             num = str(cut2)
         # check if first index is 1
-        print("Num before loops(2):", num)
         if int(num[0]) == 1:
             two_out = h_num_plus[10]
             temp2.append(h_num_plus[10])
@@ -85,7 +110,6 @@ class Conversion:
         temp3 = []
         if int(cut3) > 0:
             num = str(cut3)
-        print("num before loops(3):", num)
         # Loop to search for any special translations for first index
         special = [3,6,8]
         for i in special:
@@ -120,30 +144,39 @@ class Conversion:
         # Same as the three function
         
         if int(cut4) > 0:
-            num = str(cut4)
-        print("Num before loops(4):", num)
-        special = [3,8]
-        for i in special:
-            if int(num[0]) == i:
-                i = i*1000
-                four_out = h_num_spc[i]
-                temp4.append(h_num_spc[i])
+                num = str(cut4)
+        
+        if int(num[0]) != 0:
+            #print("Num before loops(4):", num)
+            special = [3,8]
             
-        if int(num[0]) == 1:
-            four_out = h_num_plus[1000]
-            temp4.append(h_num_plus[1000])
-        
-        for key, value in h_num.items():
-            if int(num[0]) == key and key != 3 and key != 8 and key != 1:
-                four_out = value + h_num_plus[1000]
-                temp4.append(value)
+            for i in special:
+                if int(num[0]) == i:
+                    i = i*1000
+                    four_out = h_num_spc[i]
+                    temp4.append(h_num_spc[i])
+                
+            if int(num[0]) == 1:
+                four_out = h_num_plus[1000]
                 temp4.append(h_num_plus[1000])
+            
+            for key, value in h_num.items():
+                if int(num[0]) == key and key != 3 and key != 8 and key != 1:
+                    four_out = value + h_num_plus[1000]
+                    temp4.append(value)
+                    temp4.append(h_num_plus[1000])
+            
+            cut4 = num[1:]
+            three_out, temp3 = Conversion.three(num, cut4)
+            four_out += three_out
+            temp4 += temp3
+        else:
+            num = num[1:]
+            cut4 = num
+            three_out, temp3 = Conversion.three(num, cut4)
+            four_out += three_out
+            temp4 += temp3
         
-        cut4 = num[1:]
-        three_out, temp3 = Conversion.three(num, cut4)
-        #print("this is three_out!", three_out)
-        four_out += three_out
-        temp4 += temp3
         return(four_out, temp4)
     
     def five(num, cut5=0):
@@ -154,7 +187,6 @@ class Conversion:
         
         if int(cut5) > 0:
             num = str(cut5)
-        print("Num before loops(5):", num)
         for key, value in h_num.items():
             if int(num[0]) == key:
                 five_out = value + h_num_plus[10000]
@@ -178,7 +210,6 @@ class Conversion:
             num = cut7
             cut65 = num[:2]
             cut6 = num[2:]
-        print("Num before loops(6):", num)
         # convert the first set of 10 and add 'man'
         two_out, temp2 = Conversion.two(cut65)
         six_out = two_out + h_num_plus[10000]
@@ -223,11 +254,15 @@ def converter(num):
     ### Directions based on length of number
     # 0-9 #
     
-    if num[0] == '0':
+    if num[0] == '0' and length > 1:
         # Got lazy and decided to make any beginning zeroes return an error
         # May change this once I get to QoL updates
         hir_out = "Only zero starts with 0!"
         kanji_out = "\\0-0/"
+        
+    elif num[0] == '0' and length == 1:
+        hir_out = h_num[0]
+    
     else:
         if length == 1:
             hir_out = Conversion.one(num)
@@ -298,4 +333,6 @@ if __name__ == '__main__':
     win = Window()
     win.show()
     sys.exit(app.exec())
+    # Secret Console Mode
+    # Might not even work lol
     #main()
